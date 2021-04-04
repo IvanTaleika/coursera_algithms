@@ -57,6 +57,7 @@
   <modules>
     <module>hello_world</module>
     <module>percolation</module>
+    <module>queues</module>
   </modules>
 
 </project>
