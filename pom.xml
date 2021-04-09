@@ -58,6 +58,7 @@
     <module>hello_world</module>
     <module>percolation</module>
     <module>queues</module>
+    <module>sorting</module>
   </modules>
 
 </project>
