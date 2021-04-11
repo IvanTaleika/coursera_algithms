@@ -59,6 +59,7 @@
     <module>percolation</module>
     <module>queues</module>
     <module>sorting</module>
+    <module>puzzle</module>
   </modules>
 
 </project>
