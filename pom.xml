@@ -60,6 +60,7 @@
     <module>queues</module>
     <module>sorting</module>
     <module>puzzle</module>
+    <module>kdtree</module>
   </modules>
 
 </project>
