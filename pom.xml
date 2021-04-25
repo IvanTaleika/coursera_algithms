@@ -61,6 +61,8 @@
     <module>sorting</module>
     <module>puzzle</module>
     <module>kdtree</module>
+    <module>hashing</module>
+    <module>utils</module>
   </modules>
 
 </project>

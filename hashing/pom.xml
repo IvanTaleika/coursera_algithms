@@ -10,7 +10,7 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>sorting</artifactId>
+  <artifactId>hashing</artifactId>
   <version>1.0-SNAPSHOT</version>
 
   <dependencies>
