@@ -1,18 +1,12 @@
 import edu.princeton.cs.algs4.Picture;
-import edu.princeton.cs.algs4.UF;
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.List;
 
-// TODO: to match the memory constraint we must use matrices and UF (?)
 public class SeamCarver {
 
     private int currentHeight;
     private int currentWidth;
-    private final List<List<Color>> pixels;
-    private final List<List<Double>> energies;
-    private final List<List<Double>> distTo;
-    private final List<List<Integer>> pathFrom;
+    private final double[][] energies;
+    private final int[][] pixels;
     private static final String WIDTH_DIMENSION = "width";
     private static final String HEIGHT_DIMENSION = "height";
 
@@ -23,30 +17,17 @@ public class SeamCarver {
         }
         currentHeight = picture.height();
         currentWidth = picture.width();
-
-        pixels = new ArrayList<>(currentWidth);
-        distTo = new ArrayList<>(currentWidth);
-        pathFrom = new ArrayList<>(currentWidth);
+        pixels = new int[currentWidth][currentHeight];
         for (int x = 0; x < currentWidth; x++) {
-            List<Color> pixelColumn = new ArrayList<>(currentHeight);
-            List<Double> distToColumn = new ArrayList<>(currentHeight);
-            List<Integer> pathFromColumn = new ArrayList<>(currentHeight);
-            pixels.add(pixelColumn);
-            distTo.add(distToColumn);
-            pathFrom.add(pathFromColumn);
             for (int y = 0; y < currentHeight; y++) {
-                pixelColumn.add(picture.get(x, y));
-                distToColumn.add(Double.POSITIVE_INFINITY);
-                pathFromColumn.add(-1);
+                pixels[x][y] = picture.getRGB(x, y);
             }
         }
         // All pixels must be stored before calculating energies
-        energies = new ArrayList<>(currentWidth);
+        energies = new double[currentWidth][currentHeight];
         for (int x = 0; x < currentWidth; x++) {
-            List<Double> energyColumn = new ArrayList<>(currentHeight);
-            energies.add(energyColumn);
             for (int y = 0; y < currentHeight; y++) {
-                energyColumn.add(calculateEnergy(x, y));
+                energies[x][y] = calculateEnergy(x, y);
             }
         }
     }
@@ -77,25 +58,37 @@ public class SeamCarver {
         if (x < 0 || x >= currentWidth || y < 0 || y >= currentHeight) {
             throw new IllegalArgumentException(String.format("Invalid coordinates (%d, %d)", x, y));
         }
-        return energies.get(x).get(y);
+        return energies[x][y];
     }
 
     // sequence of indices for horizontal seam
     public int[] findHorizontalSeam() {
         int seamSize = currentWidth;
         int idRange = currentHeight;
+
+        double[][] distTo = new double[currentWidth][currentHeight];
+        int[][] pathFrom = new int[currentWidth][currentHeight];
+
         for (int y = 0; y < idRange; y++) {
-            pathFrom.get(0).set(y, y);
-            distTo.get(0).set(y, 0d);
+            pathFrom[0][y] = y;
+            distTo[0][y] = 0d;
         }
+
+        for (int x = 1; x < currentWidth; x++) {
+            for (int y = 0; y < currentHeight; y++) {
+                pathFrom[x][y] = -1;
+                distTo[x][y] = Double.POSITIVE_INFINITY;
+            }
+        }
+
         for (int x = 1; x < seamSize; x++) {
             for (int y = 0; y < idRange; y++) {
                 for (int i = y - 1; i < y + 2; i++) {
                     if (i >= 0 && i < idRange) {
-                        double dist = distTo.get(x - 1).get(y) + energy(x, i);
-                        if (dist < distTo.get(x).get(i)) {
-                            distTo.get(x).set(i, dist);
-                            pathFrom.get(x).set(i, y);
+                        double dist = distTo[x - 1][y] + energy(x, i);
+                        if (dist < distTo[x][i]) {
+                            distTo[x][i] = dist;
+                            pathFrom[x][i] = y;
                         }
                     }
                 }
@@ -104,7 +97,7 @@ public class SeamCarver {
         double minPathDist = Double.POSITIVE_INFINITY;
         int unsavedSeamEndpoint = -1;
         for (int y = 0; y < idRange; y++) {
-            double dist = distTo.get(seamSize - 1).get(y);
+            double dist = distTo[seamSize - 1][y];
             if (dist < minPathDist) {
                 minPathDist = dist;
                 unsavedSeamEndpoint = y;
@@ -114,11 +107,10 @@ public class SeamCarver {
         int[] seam = new int[seamSize];
         seam[seamSize - 1] = unsavedSeamEndpoint;
         for (int x = seamSize - 1; x > 0; x--) {
-            unsavedSeamEndpoint = pathFrom.get(x).get(unsavedSeamEndpoint);
+            unsavedSeamEndpoint = pathFrom[x][unsavedSeamEndpoint];
             seam[x - 1] = unsavedSeamEndpoint;
         }
 
-        resetSearch();
         return seam;
     }
 
@@ -126,18 +118,29 @@ public class SeamCarver {
     public int[] findVerticalSeam() {
         int seamSize = currentHeight;
         int idRange = currentWidth;
+
+        double[][] distTo = new double[currentWidth][currentHeight];
+        int[][] pathFrom = new int[currentWidth][currentHeight];
         for (int x = 0; x < idRange; x++) {
-            pathFrom.get(x).set(0, x);
-            distTo.get(x).set(0, 0d);
+            pathFrom[x][0] = x;
+            distTo[x][0] = 0d;
         }
+
+        for (int x = 0; x < currentWidth; x++) {
+            for (int y = 1; y < currentHeight; y++) {
+                pathFrom[x][y] = -1;
+                distTo[x][y] = Double.POSITIVE_INFINITY;
+            }
+        }
+
         for (int y = 1; y < seamSize; y++) {
             for (int x = 0; x < idRange; x++) {
                 for (int i = x - 1; i < x + 2; i++) {
                     if (i >= 0 && i < idRange) {
-                        double dist = distTo.get(x).get(y - 1) + energy(i, y);
-                        if (dist < distTo.get(i).get(y)) {
-                            distTo.get(i).set(y, dist);
-                            pathFrom.get(i).set(y, x);
+                        double dist = distTo[x][y - 1] + energy(i, y);
+                        if (dist < distTo[i][y]) {
+                            distTo[i][y] = dist;
+                            pathFrom[i][y] = x;
                         }
                     }
                 }
@@ -146,7 +149,7 @@ public class SeamCarver {
         double minPathDist = Double.POSITIVE_INFINITY;
         int unsavedSeamEndpoint = -1;
         for (int x = 0; x < idRange; x++) {
-            double dist = distTo.get(x).get(seamSize - 1);
+            double dist = distTo[x][seamSize - 1];
             if (dist < minPathDist) {
                 minPathDist = dist;
                 unsavedSeamEndpoint = x;
@@ -156,11 +159,10 @@ public class SeamCarver {
         int[] seam = new int[seamSize];
         seam[seamSize - 1] = unsavedSeamEndpoint;
         for (int y = seamSize - 1; y > 0; y--) {
-            unsavedSeamEndpoint = pathFrom.get(unsavedSeamEndpoint).get(y);
+            unsavedSeamEndpoint = pathFrom[unsavedSeamEndpoint][y];
             seam[y - 1] = unsavedSeamEndpoint;
         }
 
-        resetSearch();
         return seam;
     }
 
@@ -169,10 +171,10 @@ public class SeamCarver {
         checkSeam(seam, WIDTH_DIMENSION);
         for (int x = 0; x < currentWidth; x++) {
             int y = seam[x];
-            pixels.get(x).remove(y);
-            energies.get(x).remove(y);
-            distTo.get(x).remove(y);
-            pathFrom.get(x).remove(y);
+            for (int i = y; i < currentHeight - 1; i++) {
+                pixels[x][i] = pixels[x][i + 1];
+                energies[x][i] = energies[x][i + 1];
+            }
         }
         currentHeight--;
 
@@ -195,15 +197,11 @@ public class SeamCarver {
         for (int y = 0; y < currentHeight; y++) {
             int x = seam[y];
             for (int i = x; i < currentWidth - 1; i++) {
-                pixels.get(i).set(y, pixels.get(i + 1).get(y));
-                energies.get(i).set(y, energies.get(i + 1).get(y));
+                pixels[i][y] = pixels[i + 1][y];
+                energies[i][y] = energies[i + 1][y];
             }
         }
         currentWidth--;
-        pixels.remove(currentWidth);
-        energies.remove(currentWidth);
-        distTo.remove(currentWidth);
-        pathFrom.remove(currentWidth);
 
         // pixel [x, y] removal can update energy of [x, y - 1].
         // That is why update is done after all the deletes
@@ -265,22 +263,12 @@ public class SeamCarver {
 
     }
 
-    private void resetSearch() {
-        for (int x = 0; x < currentWidth; x++) {
-            for (int y = 0; y < currentHeight; y++) {
-                pathFrom.get(x).set(y, -1);
-                distTo.get(x).set(y, Double.POSITIVE_INFINITY);
-            }
-        }
-    }
-
     private Color getPixel(int x, int y) {
-        return pixels.get(x).get(y);
+        return new Color(pixels[x][y]);
     }
 
     private void updateEnergy(int x, int y) {
-        List<Double> energyColumn = energies.get(x);
-        energyColumn.set(y, calculateEnergy(x, y));
+        energies[x][y] = calculateEnergy(x, y);
     }
 
     private double calculateEnergy(int x, int y) {
@@ -302,43 +290,6 @@ public class SeamCarver {
             int yEnergySquare =
                     redYDiff * redYDiff + greenYDiff * greenYDiff + blueYDiff * blueYDiff;
             return Math.sqrt(xEnergySquare + yEnergySquare);
-        }
-    }
-
-    //  unit testing (optional)
-    public static void main(String[] args) {
-        // corner-case tests
-        Picture picture = new Picture("tests/3x4.png");
-        SeamCarver seamCarver = new SeamCarver(picture);
-        testIllegalArgumentException(() -> seamCarver.energy(-1, 0));
-        testIllegalArgumentException(() -> seamCarver.energy(0, -1));
-        testIllegalArgumentException(() -> seamCarver.energy(3, 0));
-        testIllegalArgumentException(() -> seamCarver.energy(0, 4));
-        testIllegalArgumentException(() -> seamCarver.removeVerticalSeam(null));
-        testIllegalArgumentException(() -> seamCarver.removeHorizontalSeam(null));
-        testIllegalArgumentException(() -> seamCarver.removeVerticalSeam(new int[]{1}));
-        testIllegalArgumentException(() -> seamCarver.removeHorizontalSeam(new int[]{1}));
-        testIllegalArgumentException(() -> seamCarver.removeHorizontalSeam(new int[]{0, 0, 0, 0}));
-        testIllegalArgumentException(
-                () -> seamCarver.removeVerticalSeam(new int[]{0, 0, 0, 0, 0}));
-        testIllegalArgumentException(() -> seamCarver.removeHorizontalSeam(new int[]{0, 2, 0}));
-        testIllegalArgumentException(() -> seamCarver.removeVerticalSeam(new int[]{0, 1, 3, 0}));
-
-        for (int i = 0; i < 2; i++) {
-            seamCarver.removeVerticalSeam(seamCarver.findVerticalSeam());
-        }
-        for (int i = 0; i < 3; i++) {
-            seamCarver.removeHorizontalSeam(seamCarver.findHorizontalSeam());
-        }
-        testIllegalArgumentException(() -> seamCarver.removeVerticalSeam(new int[]{0}));
-        testIllegalArgumentException(() -> seamCarver.removeHorizontalSeam(new int[]{0}));
-    }
-
-    private static void testIllegalArgumentException(Runnable testFunction) {
-        try {
-            testFunction.run();
-            throw new RuntimeException("IllegalArgumentException expected, but not thrown");
-        } catch (IllegalArgumentException e) {
         }
     }
 
