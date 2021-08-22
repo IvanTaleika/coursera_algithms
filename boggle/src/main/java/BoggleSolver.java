@@ -1,7 +1,4 @@
-import edu.princeton.cs.algs4.Graph;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 // Solution accept n english uppercase letters only
@@ -12,10 +9,9 @@ public class BoggleSolver {
     private static final int RADIX = ALPHABET.length();
     private static final int RADIX_SHIFT = 'A';
 
-    private Graph searchNetwork;
     private Set<String> boggleWords;
-    private boolean[] marked;
-    private Map<Integer, Character> vertexToId;
+    private boolean[][] marked;
+    private BoggleBoard board;
 
     // Initializes the data structure using the given array of strings as the dictionary.
     // (You can assume each word in the dictionary contains only the uppercase letters A through Z.)
@@ -31,16 +27,14 @@ public class BoggleSolver {
 
     // Returns the set of all valid words in the given Boggle board, as an Iterable.
     public Iterable<String> getAllValidWords(BoggleBoard board) {
-        int networkSize = board.cols() * board.rows();
-        searchNetwork = new Graph(networkSize);
-        marked = new boolean[networkSize];
-        vertexToId = new HashMap<>();
+        this.board = board;
+        marked = new boolean[board.rows()][board.cols()];
         boggleWords = new HashSet<>();
 
-        buildNetwork(board);
-
-        for (int i = 0; i < networkSize; i++) {
-            startSearch(root, i);
+        for (int i = 0; i < board.rows(); i++) {
+            for (int j = 0; j < board.cols(); j++) {
+                startSearch(root, i, j);
+            }
         }
         return boggleWords;
     }
@@ -80,59 +74,48 @@ public class BoggleSolver {
         }
     }
 
-    private void buildNetwork(BoggleBoard board) {
-        for (int i = 0; i < board.rows(); i++) {
-            for (int j = 0; j < board.cols(); j++) {
-                int vertexId = i * board.cols() + j;
-                vertexToId.put(vertexId, board.getLetter(i, j));
-                // create edges only to vertices before (i, j)
-                if (j != 0) {
-                    searchNetwork.addEdge(vertexId, vertexId - 1);
-                }
-                if (i != 0) {
-                    searchNetwork.addEdge(vertexId, vertexId - board.cols());
-                    if (j != 0) {
-                        searchNetwork.addEdge(vertexId, vertexId - board.cols() - 1);
-                    }
-                    if (j != board.cols() - 1) {
-                        searchNetwork.addEdge(vertexId, vertexId - board.cols() + 1);
-                    }
-                }
-            }
-        }
-    }
-
-    private void searchAdjacent(TrieEntry entry, int vertex) {
+    private void searchAdjacent(TrieEntry entry, int i, int j) {
         if (entry.word != null) {
             boggleWords.add(entry.word);
         }
-
-        for (int adjacent : searchNetwork.adj(vertex)) {
-            if (!marked[adjacent]) {
-                startSearch(entry, adjacent);
+        for (int ii = -1; ii < 2; ii++) {
+            for (int jj = -1; jj < 2; jj++) {
+                int adjI = i + ii;
+                int adjJ = j + jj;
+                if (isValidBoardRow(adjI) && isValidBoardCol(adjJ) && !marked[adjI][adjJ]) {
+                    startSearch(entry, adjI, adjJ);
+                }
             }
         }
     }
 
-    private void startSearch(TrieEntry parentEntry, int vertex) {
-        char letter = vertexToId.get(vertex);
+    private void startSearch(TrieEntry parentEntry, int i, int j) {
+        char letter = board.getLetter(i, j);
         int trieId = position(letter);
         TrieEntry entry = parentEntry.children[trieId];
 
         if (entry != null) {
-            marked[vertex] = true;
+            marked[i][j] = true;
 
             // In this task 'Q' always represents 'QU'. This mean words like `SEQ` or `SHEQALIM` won't be counted.
             if (letter == 'Q') {
                 TrieEntry quEntry = entry.children[position('U')];
                 if (quEntry != null) {
-                    searchAdjacent(quEntry, vertex);
+                    searchAdjacent(quEntry, i, j);
                 }
             } else {
-                searchAdjacent(entry, vertex);
+                searchAdjacent(entry, i, j);
             }
-            marked[vertex] = false;
+            marked[i][j] = false;
         }
+    }
+
+    private boolean isValidBoardRow(int i) {
+        return i >= 0 && i < board.rows();
+    }
+
+    private boolean isValidBoardCol(int j) {
+        return j >= 0 && j < board.cols();
     }
 
     private static class TrieEntry {

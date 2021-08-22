@@ -19,7 +19,7 @@ public class BoggleSolverTest {
     }
 
     private static void testPrecomputedBoard(BoggleSolver solver) {
-        String boardFile = "tests/board-qwerty.txt";
+        String boardFile = "tests/board-aqua.txt";
         BoggleBoard board = new BoggleBoard(boardFile);
         int score = 0;
         int words = 0;
