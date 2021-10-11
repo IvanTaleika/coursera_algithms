@@ -3,6 +3,8 @@ import edu.princeton.cs.algs4.BinaryStdOut;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+// Forum advise using array copies instead of linked list. It may be a bit faster, but the order of grows is the same.
+// There is no solution that will allow us to avoid visiting every character before searched char `c`
 public class MoveToFront {
 
     // apply move-to-front encoding, reading from standard input and writing to standard output
@@ -12,8 +14,11 @@ public class MoveToFront {
             Iterator<Character> iterator = encoderList.iterator();
             for (char i = 0; iterator.hasNext(); i++) {
                 if (iterator.next() == c) {
-                    iterator.remove();
-                    encoderList.addFirst(c);
+                    // A super minor performance boost for the task. However, I'd guess it can have negative impact on CPUs out of order execution.
+                    if (i != 0) {
+                        iterator.remove();
+                        encoderList.addFirst(c);
+                    }
                     return i;
                 }
             }
@@ -26,7 +31,6 @@ public class MoveToFront {
     public static void decode() {
         LinkedList<Character> encoderList = init();
         convert(c -> {
-            // Keeping list for simplicity. Can be implemented more efficiently using Map, because it is search by key, not value like in `encode` operation
             char result = encoderList.remove(c);
             encoderList.addFirst(result);
             return result;

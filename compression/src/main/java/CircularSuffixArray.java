@@ -25,7 +25,7 @@ public class CircularSuffixArray {
 
         @Override
         public char charAt(int index) {
-            return backend[offset + index];
+            return backend[(offset + index) % length];
         }
 
         @Override
@@ -43,10 +43,8 @@ public class CircularSuffixArray {
             throw new IllegalArgumentException("Source string cannot be null");
         }
         this.length = s.length();
-        // Avoid pointer arithmetic
-        String ss = s.concat(s);
         CharsWrapper[] suffixes = new CharsWrapper[length];
-        char[] backendArray = ss.toCharArray();
+        char[] backendArray = s.toCharArray();
         for (int i = 0; i < length; i++) {
             suffixes[i] = new CharsWrapper(backendArray, i, length);
         }
